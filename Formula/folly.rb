@@ -13,6 +13,8 @@ class Folly < Formula
     sha256 "5704909af39dbf86429109c0f790f9d1dcb0e12cd64a238931babb2d524b7338" => :sierra
   end
 
+  option "without-shared", "Do not build shared libraries"
+
   depends_on "cmake" => :build
   depends_on "pkg-config" => :build
   depends_on "boost"
@@ -53,13 +55,16 @@ class Folly < Formula
       # See https://github.com/facebook/folly/issues/864
       args << "-DCOMPILER_HAS_F_ALIGNED_NEW=OFF" if MacOS.version == :sierra
 
-      system "cmake", "..", *args, "-DBUILD_SHARED_LIBS=ON"
-      system "make"
-      system "make", "install"
+      if build.without? "shared"
+        system "cmake", "..", *args, "-DBUILD_SHARED_LIBS=ON"
+        system "make"
+        system "make", "install"
+        system "make", "clean"
+      end
 
-      system "make", "clean"
       system "cmake", "..", *args, "-DBUILD_SHARED_LIBS=OFF"
       system "make"
+      system "make", "install"
       lib.install "libfolly.a", "folly/libfollybenchmark.a"
     end
   end

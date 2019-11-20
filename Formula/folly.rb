@@ -29,21 +29,38 @@ class Folly < Formula
   depends_on "xz"
   depends_on "zstd"
 
+  option "without-shared", "Compile without shared libraries"
+
+  option "with-jemalloc", "Compile with jemalloc support"
+  depends_on "jemalloc" => :optional
+
   uses_from_macos "python"
 
   def install
     mkdir "_build" do
-      args = std_cmake_args + %w[
-        -DFOLLY_USE_JEMALLOC=OFF
-      ]
+      if build.with? "jemalloc"
+        args = std_cmake_args + %w[
+          -DFOLLY_USE_JEMALLOC=ON
+        ]
+      else
+        args = std_cmake_args + %w[
+          -DFOLLY_USE_JEMALLOC=OFF
+        ]
+      end
 
-      system "cmake", "..", *args, "-DBUILD_SHARED_LIBS=ON"
-      system "make"
-      system "make", "install"
+      if not build.without? "shared"
+        system "cmake", "..", *args, "-DBUILD_SHARED_LIBS=ON"
+        system "make"
+        system "make", "install"
 
-      system "make", "clean"
-      system "cmake", "..", *args, "-DBUILD_SHARED_LIBS=OFF"
-      system "make"
+        system "make", "clean"
+        system "cmake", "..", *args, "-DBUILD_SHARED_LIBS=OFF"
+        system "make"
+      else
+        system "cmake", "..", *args, "-DBUILD_SHARED_LIBS=OFF"
+        system "make"
+        system "make", "install"
+      end
       lib.install "libfolly.a", "folly/libfollybenchmark.a"
     end
   end
